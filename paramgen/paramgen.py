@@ -193,15 +193,15 @@ class ParameterGeneration():
         print(f'Loading factor tables from {self.factor_tables_dir}')
         if generate_paths:
             Path(f"{self.factor_tables_dir}/people4Hops").mkdir(parents=True, exist_ok=True)
-            parquet_output_dir = f"{self.factor_tables_dir}/people4Hops/curated_paths.parquet"
+            curated_paths_parquet_file = f"{self.factor_tables_dir}/people4Hops/curated_paths.parquet"
             # Remove existing altered factor table
-            Path(parquet_output_dir).unlink(missing_ok=True)
+            Path(curated_paths_parquet_file).unlink(missing_ok=True)
             print("============ Start: Generate People 4 Hops ============")
 
             # The path curation is ran first and replaces the people4hops parquet file (old one is removed)
             # This to ensure 13b and 14b use existing paths
             path_curation = PathCuration(self.raw_parquet_dir, self.factor_tables_dir)
-            path_curation.get_people_4_hops_paths(self.start_date, self.end_date, self.time_bucket_size_in_days, parquet_output_dir)
+            path_curation.get_people_4_hops_paths(self.start_date, self.end_date, self.time_bucket_size_in_days, curated_paths_parquet_file)
             print("============ Done:  Generate People 4 Hops ============")
             files = glob.glob(f'{self.factor_tables_dir}/people4Hops/*')
             for f in files:
