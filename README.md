@@ -3,9 +3,10 @@
 
 [![Build Status](https://circleci.com/gh/ldbc/ldbc_snb_interactive_v2_driver.svg?style=svg)](https://circleci.com/gh/ldbc/ldbc_snb_interactive_v2_driver)
 
-This driver runs the Social Network Benchmark's Interactive workload, including cross-validation and benchmark execution. The implementations of the workload (with DBMSs such as Neo4j and PostgreSQL) are available in <https://github.com/ldbc/ldbc_snb_interactive_v2_impls>.
+This driver runs the Social Network Benchmark's Interactive v2 workload, including cross-validation and benchmark execution.
+The implementations of the workload (with DBMSs such as Neo4j and PostgreSQL) are available in <https://github.com/ldbc/ldbc_snb_interactive_v2_impls>.
 
-### User Guide
+## User Guide
 
 Clone and build with Maven:
 
@@ -27,7 +28,7 @@ java \
 
 For more information, please refer to the [Documentation](https://github.com/ldbc/ldbc_driver/wiki).
 
-### Deploying Maven Artifacts
+## Deploying Maven Artifacts
 
 We use a manual process for deploying Maven artifacts.
 
