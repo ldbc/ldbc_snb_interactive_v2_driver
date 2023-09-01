@@ -2,8 +2,8 @@ SELECT
     personId AS 'personId',
     creationDay AS 'startDate',
     2 + salt * 37 % 5 AS 'durationDays',
-       useFrom AS 'useFrom',
-       useUntil AS 'useUntil'
+    useFrom AS 'useFrom',
+    useUntil AS 'useUntil'
 FROM
     (
         SELECT Person1Id AS personId,

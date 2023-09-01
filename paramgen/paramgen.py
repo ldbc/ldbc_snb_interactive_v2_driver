@@ -57,6 +57,7 @@ class ParameterGeneration():
         start_date:datetime,
         end_date:datetime,
         time_bucket_size_in_days:int,
+        generate_paths:bool,
         generate_short_query_parameters:bool,
         threshold_values_path:str,
         logging_level:str='INFO'
@@ -66,6 +67,7 @@ class ParameterGeneration():
         self.start_date = start_date
         self.end_date = end_date
         self.time_bucket_size_in_days = time_bucket_size_in_days
+        self.generate_paths = generate_paths
         self.generate_short_query_parameters = generate_short_query_parameters
         self.threshold_values_path = threshold_values_path
         Path('scratch/paramgen.duckdb').unlink(missing_ok=True)
@@ -141,8 +143,7 @@ class ParameterGeneration():
                 query_template = query_template.replace(':param_column',    str(params['param_column']))
                 query_template = query_template.replace(':source_table',    str(params['source_table']))
                 query_template = query_template.replace(':window_column',   str(params['window_column']))
-                self.cursor.execute(f"DROP TABLE IF EXISTS {str(params['table_name'])}")
-                self.cursor.execute(f"CREATE TABLE {str(params['table_name'])} AS SELECT * FROM ({query_template});")
+                self.cursor.execute(f"CREATE OR REPLACE TABLE {str(params['table_name'])} AS SELECT * FROM ({query_template});")
 
 
     def create_views_of_factor_tables(self, factor_tables_path):
@@ -165,49 +166,56 @@ class ParameterGeneration():
             schema_def = f.read()
             self.cursor.execute(schema_def)
 
-        print("============ Loading the factor tables ============")
+        print("============ Start: Creating views on the factor tables ============")
         directories = glob.glob(f'{factor_tables_path}')
         if (len(directories) == 0):
             self.logger.error(f"{factor_tables_path} is empty")
             raise ValueError(f"{factor_tables_path} is empty")
-        # Create views of raw parquet files
+        # Create views of the parquet files encoding factor tables
         for directory in directories:
             path_dir = Path(directory)
             if path_dir.is_dir():
-                print(f"Creating view on {path_dir.name}")
-                self.cursor.execute(f"DROP VIEW IF EXISTS {path_dir.name}")
+                print(f"Creating view on factor table {path_dir.name}")
                 self.cursor.execute(
                     f"""
-                    CREATE VIEW {path_dir.name} AS
-                    SELECT * FROM read_parquet('{str(Path(directory).absolute()) + "/*.parquet"}');
+                    CREATE OR REPLACE VIEW {path_dir.name} AS
+                    FROM read_parquet('{str(Path(directory).absolute())}/*.parquet');
                     """
                 )
-        print("============ Factor Tables loaded ============")
+        print("============ Done:  Creating views on the factor tables ============")
 
-    def run(self, generate_paths):
+        print("============ Start: Creating view on raw Message files ============")
+        # Create view on the raw parquet files of the messages
+        for message_type in ["Comment", "Post"]:
+            self.cursor.execute(
+                f"""
+                CREATE OR REPLACE VIEW {message_type} AS
+                FROM read_parquet('{str(Path(self.raw_parquet_dir).absolute())}/composite-merged-fk/dynamic/{message_type}/*.parquet');
+                """
+            )
+        print("============ Done:  Creating view on raw Message files ============")
+
+    def run(self):
         """
         Entry point of the parameter generation. Generates parameters
         for LDBC SNB Interactive queries.
         """
-        # Create folder in case it does not exist.
         print(f'Loading factor tables from {self.factor_tables_dir}')
-        if generate_paths:
-            Path(f"{self.factor_tables_dir}/people4Hops").mkdir(parents=True, exist_ok=True)
-            curated_paths_parquet_file = f"{self.factor_tables_dir}/people4Hops/curated_paths.parquet"
-            # Remove existing altered factor table
-            Path(curated_paths_parquet_file).unlink(missing_ok=True)
-            print("============ Start: Generate People 4 Hops ============")
 
-            # The path curation is ran first and replaces the people4hops parquet file (old one is removed)
-            # This to ensure 13b and 14b use existing paths
+        # The path curation is ran first and replaces the parquet file(s) of the people4Hops directory.
+        # The old ones are removed.
+        # This step ensures that 13b and 14b use existing paths.
+        curated_paths_parquet_file = f'{self.factor_tables_dir}/people4Hops/curated_paths.parquet'
+        if self.generate_paths and not os.path.exists(curated_paths_parquet_file):
+            print("============ Start: Generate People 4 Hops ============")
             path_curation = PathCuration(self.raw_parquet_dir, self.factor_tables_dir)
             path_curation.get_people_4_hops_paths(self.start_date, self.end_date, self.time_bucket_size_in_days, curated_paths_parquet_file)
             print("============ Done:  Generate People 4 Hops ============")
             files = glob.glob(f'{self.factor_tables_dir}/people4Hops/*')
             for f in files:
-                print(f)
-                if f != f'{self.factor_tables_dir}/people4Hops/curated_paths.parquet':
+                if f != curated_paths_parquet_file:
                     os.remove(f)
+
         self.create_views_of_factor_tables(self.factor_tables_dir)
 
         with open(self.threshold_values_path) as json_file:
@@ -344,13 +352,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--raw_parquet_dir',
-        help="raw_parquet_dir: directory containing the raw parquet file for Person and Person_knows_Person e.g. '/data/out-sf1/graphs/parquet/raw/'",
+        help="raw_parquet_dir: directory containing the raw parquet file for Person and Person_knows_Person, e.g. '/data/out-sf1/graphs/parquet/raw/'",
         type=str,
         required=True
     )
     parser.add_argument(
         '--factor_tables_dir',
-        help="factor_tables_dir: directory containing the factor tables e.g. '/data/out-sf1/factors/parquet/raw/composite-merged-fk/'",
+        help="factor_tables_dir: directory containing the factor tables, e.g. '/data/out-sf1/factors/parquet/raw/composite-merged-fk/'",
         type=str,
         required=True
     )
@@ -390,5 +398,5 @@ if __name__ == "__main__":
     end_date = datetime(year=2013, month=1, day=1, hour=0, minute=0, second=0, tzinfo=ZoneInfo('GMT'))
     bulk_load_portion = 0.97
     threshold = datetime.fromtimestamp(end_date.timestamp() - ((end_date.timestamp() - start_date) * (1 - bulk_load_portion)), tz=ZoneInfo('GMT'))
-    PG = ParameterGeneration(args.factor_tables_dir, args.raw_parquet_dir, threshold, end_date, args.time_bucket_size_in_days, args.generate_short_query_parameters, args.threshold_values_path)
-    PG.run(args.generate_paths)
+    PG = ParameterGeneration(args.factor_tables_dir, args.raw_parquet_dir, threshold, end_date, args.time_bucket_size_in_days, args.generate_paths, args.generate_short_query_parameters, args.threshold_values_path)
+    PG.run()
