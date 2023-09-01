@@ -174,7 +174,7 @@ class ParameterGeneration():
         for directory in directories:
             path_dir = Path(directory)
             if path_dir.is_dir():
-                print(f"Loading {path_dir.name}")
+                print(f"Creating view on {path_dir.name}")
                 self.cursor.execute(f"DROP VIEW IF EXISTS {path_dir.name}")
                 self.cursor.execute(
                     f"""
@@ -196,13 +196,13 @@ class ParameterGeneration():
             parquet_output_dir = f"{self.factor_tables_dir}/people4Hops/curated_paths.parquet"
             # Remove existing altered factor table
             Path(parquet_output_dir).unlink(missing_ok=True)
-            print("============ Generate People 4 Hops ============")
+            print("============ Start: Generate People 4 Hops ============")
 
             # The path curation is ran first and replaces the people4hops parquet file (old one is removed)
-            # This to ensure 13b and 14b uses existing paths
+            # This to ensure 13b and 14b use existing paths
             path_curation = PathCuration(self.raw_parquet_dir, self.factor_tables_dir)
             path_curation.get_people_4_hops_paths(self.start_date, self.end_date, self.time_bucket_size_in_days, parquet_output_dir)
-            print("============ Done ============")
+            print("============ Done:  Generate People 4 Hops ============")
             files = glob.glob(f'{self.factor_tables_dir}/people4Hops/*')
             for f in files:
                 print(f)
@@ -219,29 +219,29 @@ class ParameterGeneration():
 
         # The path queries are generated separately since path curation already contains
         # useFrom and useUntil columns for each parameter pair.
-        print("============ Generate 13b and 14b parameters ============")
+        print("============ Start: Generate 13b and 14b parameters ============")
         # self.generate_parameter_for_query_type(self.start_date, self.start_date, "13b")
         self.generate_parameter_for_query_type(self.start_date, self.start_date, "14b")
-        print("============ Done ============")
+        print("============ Done:  Generate 13b and 14b parameters ============")
 
         # Generate the other parameters
-        print("============ Generate parameters Q1 - Q13 ============")
+        print("============ Start: Generate parameters Q1 - Q13 ============")
         self.generate_parameters(
             self.start_date,
             self.start_date,
             self.end_date,
             timedelta(days=self.time_bucket_size_in_days)
         )
-        print("============ Done ============")
-        print("============ Export parameters to parquet files ============")
+        print("============ Done:  Generate parameters Q1 - Q13 ============")
+        print("============ Start: Export parameters to parquet files ============")
         self.export_parameters()
-        print("============ Done ============")
+        print("============ Done:  Export parameters to parquet files ============")
         paramgen_end_time = time.time()
         print(f"Total Parameter Generation Duration: {paramgen_end_time - paramgen_start_time:.4f} seconds")
-        print("============ Generate short read debug parameters ============")
+        print("============ Start: Generate short read debug parameters ============")
         if (self.generate_short_query_parameters):
             self.generate_short_parameters()
-        print("============ Done ============")
+        print("============ Done:  Generate short read debug parameters ============")
 
         # Remove temporary database
         Path('scratch/paramgen.duckdb').unlink(missing_ok=True)
