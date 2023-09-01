@@ -10,7 +10,6 @@ DESC: This file contains the class, ParameterGeneration, containing functions
          persons with a useFrom and useUntil date.
       2. Preselect windows for selected factor tables
       3. Generate parameters
-      4. Generate parameters for short queries (used for debugging)
 
       Output are parquet files containing the parameters per query, with a 
       start and end date.
@@ -57,7 +56,6 @@ class ParameterGeneration():
         start_date:datetime,
         end_date:datetime,
         time_bucket_size_in_days:int,
-        generate_short_query_parameters:bool,
         threshold_values_path:str,
         logging_level:str='INFO'
     ):
@@ -66,7 +64,6 @@ class ParameterGeneration():
         self.start_date = start_date
         self.end_date = end_date
         self.time_bucket_size_in_days = time_bucket_size_in_days
-        self.generate_short_query_parameters = generate_short_query_parameters
         self.threshold_values_path = threshold_values_path
         Path('scratch/paramgen.duckdb').unlink(missing_ok=True)
         self.cursor = duckdb.connect(database="scratch/paramgen.duckdb")
@@ -238,9 +235,6 @@ class ParameterGeneration():
         print("============ Done ============")
         paramgen_end_time = time.time()
         print(f"Total Parameter Generation Duration: {paramgen_end_time - paramgen_start_time:.4f} seconds")
-        print("============ Generate short read debug parameters ============")
-        if (self.generate_short_query_parameters):
-            self.generate_short_parameters()
         print("============ Done ============")
 
         # Remove temporary database
@@ -267,20 +261,6 @@ class ParameterGeneration():
                 # print(f"- Q{query_variant}, date {date_limit.strftime('%Y-%m-%d')}")
                 self.generate_parameter_for_query_type(date_limit, date_start, query_variant)
             date_limit = date_limit + window_time
-
-    def generate_short_parameters(self):
-        """
-        Generates personIds and messageIds for manual testing of short queries
-        Args:
-            - cursor      (DuckDBPyConnection): cursor to the DuckDB instance
-            - date_start  (datetime): The first day of the inserts. This is used for parameters that do not contain creation and deletion dates
-        """
-        print("============ Generate Short Query Parameters ============")
-        for query_variant in ["personId", "messageId"]:
-            self.generate_parameter_for_query_type(self.start_date, self.start_date, query_variant)
-            print(f"- Q{query_variant} TO ../parameters/interactive-{query_variant}.parquet")
-            self.cursor.execute(f"COPY 'Q_{query_variant}' TO '../parameters/interactive-{query_variant}.parquet' WITH (FORMAT PARQUET);")
-        print("============ Short Query Parameters exported ============")
 
     def generate_parameter_for_query_type(self, date_limit, date_start, query_variant):
         """
@@ -362,14 +342,6 @@ if __name__ == "__main__":
         required=False
     )
     parser.add_argument(
-        '--generate_short_query_parameters',
-        help="generate_short_query_parameters: Generate parameters to use manually for the short queries (these are not loaded by the driver)",
-        type=str_to_bool,
-        default=False,
-        nargs='?',
-        required=False
-    )
-    parser.add_argument(
         '--generate_paths',
         help="generate_paths: Whether paths should be generated",
         type=str_to_bool,
@@ -390,5 +362,5 @@ if __name__ == "__main__":
     end_date = datetime(year=2013, month=1, day=1, hour=0, minute=0, second=0, tzinfo=ZoneInfo('GMT'))
     bulk_load_portion = 0.97
     threshold = datetime.fromtimestamp(end_date.timestamp() - ((end_date.timestamp() - start_date) * (1 - bulk_load_portion)), tz=ZoneInfo('GMT'))
-    PG = ParameterGeneration(args.factor_tables_dir, args.raw_parquet_dir, threshold, end_date, args.time_bucket_size_in_days, args.generate_short_query_parameters, args.threshold_values_path)
+    PG = ParameterGeneration(args.factor_tables_dir, args.raw_parquet_dir, threshold, end_date, args.time_bucket_size_in_days, args.threshold_values_path)
     PG.run(args.generate_paths)
