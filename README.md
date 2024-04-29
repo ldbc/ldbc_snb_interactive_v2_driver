@@ -6,6 +6,8 @@
 This driver runs the Social Network Benchmark's Interactive v2 workload, including cross-validation and benchmark execution.
 The implementations of the workload (with DBMSs such as Neo4j and PostgreSQL) are available in <https://github.com/ldbc/ldbc_snb_interactive_v2_impls>.
 
+The design and implementation of the SNB Interactive v2 workload are described in the [TPCTC 2023 paper, "The LDBC Social Network Benchmark Interactive Workload v2: A Transactional Graph Query Benchmark with Deep Delete Operations"](https://ldbcouncil.org/docs/papers/ldbc-snb-interactive-v2-tpctc2023-preprint.pdf) by Püroja et al.
+
 ## User Guide
 
 Clone and build with Maven:
