@@ -45,3 +45,10 @@ We use a manual process for deploying Maven artifacts.
 3. Go to the `snb-mvn` directory, check whether the JAR files are correct.
 
 4. Commit and push.
+
+## Audited runs
+
+Implementations of the Interactive workload can be [audited](https://ldbcouncil.org/benchmarks/snb-interactive/) by a certified LDBC auditor.
+The [Auditing Policies chapter of the specification](https://ldbcouncil.org/ldbc_snb_docs/ldbc-snb-specification.pdf) describes the auditing process and the required artifacts.
+
+If you plan to get your system audited, please reach out to the [LDBC Board of Directors](https://ldbcouncil.org/leadership/).
