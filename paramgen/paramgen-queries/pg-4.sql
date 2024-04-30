@@ -12,13 +12,13 @@ FROM
           FROM personNumFriendsSelected
          WHERE deletionDate - INTERVAL 1 DAY > :date_limit_filter
            AND creationDate + INTERVAL 1 DAY < :date_limit_filter
-         ORDER BY diff, md5(Person1Id)
+         ORDER BY diff, md5(Person1Id::VARCHAR)
          LIMIT 10
     ),
     (
         SELECT creationDay
         FROM creationDayNumMessagesSelected
-        ORDER BY md5(creationDay)
+        ORDER BY md5(creationDay::VARCHAR)
         LIMIT 10
     ),
     (SELECT unnest(generate_series(1, 20)) AS salt)

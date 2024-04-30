@@ -11,13 +11,13 @@ FROM
           FROM personNumFriendsSelected
          WHERE deletionDate - INTERVAL 1 DAY > :date_limit_filter
            AND creationDate + INTERVAL 1 DAY < :date_limit_filter
-         ORDER BY md5(Person1Id)
+         ORDER BY md5(Person1Id::VARCHAR)
          LIMIT 50
     ),
     (
         SELECT creationDay
         FROM creationDayNumMessagesSelected
-        ORDER BY md5(creationDay)
+        ORDER BY md5(creationDay::VARCHAR)
         LIMIT 20
     )
 ORDER BY md5(concat(personId, creationDay))
