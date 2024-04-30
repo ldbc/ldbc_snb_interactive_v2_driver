@@ -3,13 +3,13 @@
 (
     SELECT id AS MessageId
     FROM Comment
-    WHERE deletionDate > '2019'
+    WHERE deletionDate > epoch_ms('2019-01-01'::TIMESTAMP)
     USING SAMPLE 50
 )
 UNION ALL
 (
     SELECT id AS MessageId
     FROM Post
-    WHERE deletionDate > '2019'
+    WHERE deletionDate > epoch_ms('2019-01-01'::TIMESTAMP)
     USING SAMPLE 50
 )

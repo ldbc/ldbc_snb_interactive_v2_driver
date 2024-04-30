@@ -9,14 +9,14 @@ FROM
         SELECT PersonId, Component, creationDate
           FROM personKnowsPersonConnected, personNumFriends
          WHERE personNumFriends.id = PersonId
-         ORDER BY md5(PersonId + 3)
+         ORDER BY md5((PersonId + 3)::VARCHAR)
          LIMIT 100
     ) component1,
     (
         SELECT PersonId, Component, creationDate
           FROM personKnowsPersonConnected, personNumFriends
          WHERE personNumFriends.id = PersonId
-         ORDER BY md5(PersonId + 4)
+         ORDER BY md5((PersonId + 4)::VARCHAR)
          LIMIT 100
     ) component2,
     (

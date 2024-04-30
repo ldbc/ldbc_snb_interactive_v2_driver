@@ -11,7 +11,7 @@ FROM
           FROM personNumFriendsSelected
          WHERE deletionDate - INTERVAL 1 DAY > :date_limit_filter
            AND creationDate + INTERVAL 1 DAY < :date_limit_filter
-         ORDER BY diff, md5(Person1Id)
+         ORDER BY diff, md5(Person1Id::VARCHAR)
          LIMIT 50
     ),
     (
